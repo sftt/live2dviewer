@@ -45,9 +45,10 @@ public class Live2DViewerController : MonoBehaviour
 		return true;
 	}
 
-	public void loadModel(CubismModel newModel, CubismModel3Json newModel3Json = null) {
+	public void loadModel(CubismModel newModel, string name, CubismModel3Json newModel3Json = null) {
 		if (newModel != null) {
 			//newModel.gameObject.SetActive(false);
+			newModel.name = name;
 			model = model3;
 			model3 = newModel;
 			if (model != null) {
@@ -65,17 +66,17 @@ public class Live2DViewerController : MonoBehaviour
 			case Live2DViewerConfigChangeType.Model:
 				if (config.models.Length > 0) {
 					var current = config.currentModel;
-					if (current.mocFile.EndsWith(".model3.json")) {
-						var m3j = CubismModel3Json.LoadAtPath(current.mocFile);
-						if (m3j != null && newModel(Path.GetFileNameWithoutExtension(m3j.FileReferences.Moc))) {
-							loadModel(m3j.ToModel(), m3j);
-						}
-					} else {
-						var moc = CubismMoc.CreateFrom(File.ReadAllBytes(current.mocFile));
-						if (moc != null && newModel(Path.GetFileNameWithoutExtension(current.mocFile))) {
-							var newModel = CubismModel.InstantiateFrom(moc);
-							newModel.name = name;
-							loadModel(newModel);
+					if (newModel(current.name)) {
+						if (current.mocFile.EndsWith(".model3.json")) {
+							var m3j = CubismModel3Json.LoadAtPath(current.mocFile);
+							if (m3j != null) {
+								loadModel(m3j.ToModel(), current.name, m3j);
+							}
+						} else {
+							var moc = CubismMoc.CreateFrom(File.ReadAllBytes(current.mocFile));
+							if (moc != null) {
+								loadModel(CubismModel.InstantiateFrom(moc), current.name);
+							}
 						}
 					}
 					//_motionController = model3.GetComponent<CubismMotionController>();

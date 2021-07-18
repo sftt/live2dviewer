@@ -61,17 +61,11 @@ public class Live2DViewerConfig
 		var modelList = new List<Live2DModelConfig>();
 
 		foreach (string file in Directory.GetDirectories(path)) {
-			var modelConfig = TryScanModelFolder(file);
-			if (modelConfig != null) {
-				modelList.Add(modelConfig);
-			}
+			TryScanModelFolder(file, modelList);
 		}
 
 		if (modelList.Count == 0) {
-			var modelConfig = TryScanModelFolder(path);
-			if (modelConfig != null) {
-				modelList.Add(modelConfig);
-			}
+			TryScanModelFolder(path, modelList);
 		}
 
 		models = modelList.ToArray();
@@ -79,7 +73,22 @@ public class Live2DViewerConfig
 		currentModelIndex = 0;
 	}
 
-	private Live2DModelConfig TryScanModelFolder(string path) {
+	private void TryScanModelFolder(string path, List<Live2DModelConfig> modelList) {
+		var mocFiles = Directory.GetFiles(path, "*.model3.json", SearchOption.AllDirectories);
+		if (mocFiles.Length == 0) {
+			mocFiles = Directory.GetFiles(path, "*.moc3", SearchOption.AllDirectories); // also search moc3 files
+			if (mocFiles.Length == 0)
+				return;
+		} else {
+			foreach (var mocFile in mocFiles) {
+				var mocConfig = new Live2DModelConfig();
+				mocConfig.name = Path.GetFileNameWithoutExtension(mocFile.Replace(".json", ""));
+				mocConfig.path = path;
+				mocConfig.mocFile = mocFile;
+				modelList.Add(mocConfig);
+			}
+			return;
+		}
 		var config = new Live2DModelConfig();
 
 		config.name = Path.GetFileName(path);
@@ -87,15 +96,8 @@ public class Live2DViewerConfig
 			config.name = Path.GetFileName(Path.GetDirectoryName(path));
 		}
 		config.path = path;
-
-		var mocFiles = Directory.GetFiles(path, "*.model3.json", SearchOption.AllDirectories);
-		if (mocFiles.Length == 0) {
-			mocFiles = Directory.GetFiles(path, "*.moc3", SearchOption.AllDirectories); // also search moc3 files
-			if (mocFiles.Length == 0)
-				return null;
-		}
-
 		config.mocFile = mocFiles[0];
+		config.name = Path.GetFileNameWithoutExtension(config.mocFile);
 		var basename = Path.GetFileNameWithoutExtension(config.mocFile.Replace(".json",""));
 
 		foreach (string textureDir in Directory.GetDirectories(path, basename + ".*")) {
@@ -115,7 +117,7 @@ public class Live2DViewerConfig
 		var poseFiles = Directory.GetFiles(path, "*.pose.json", SearchOption.AllDirectories);
 		if (poseFiles.Length > 0) config.poseFile = poseFiles[0];
 
-		return config;
+		modelList.Add(config);
 	}
 }
 
