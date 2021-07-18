@@ -88,15 +88,15 @@ public class Live2DViewerConfig
 		}
 		config.path = path;
 
-		var mocFiles = Directory.GetFiles(path, "*.moc", SearchOption.AllDirectories);
+		var mocFiles = Directory.GetFiles(path, "*.model3.json", SearchOption.AllDirectories);
 		if (mocFiles.Length == 0) {
-			mocFiles = Directory.GetFiles(path, "*.moc.bytes", SearchOption.AllDirectories); // also search bytes files
+			mocFiles = Directory.GetFiles(path, "*.moc3", SearchOption.AllDirectories); // also search moc3 files
 			if (mocFiles.Length == 0)
 				return null;
 		}
 
 		config.mocFile = mocFiles[0];
-		var basename = Path.GetFileNameWithoutExtension(config.mocFile.Replace(".bytes",""));
+		var basename = Path.GetFileNameWithoutExtension(config.mocFile.Replace(".json",""));
 
 		foreach (string textureDir in Directory.GetDirectories(path, basename + ".*")) {
 			var textures = Directory.GetFiles(textureDir, "*.png");
@@ -107,7 +107,7 @@ public class Live2DViewerConfig
 			}
 		}
 
-		config.motionFiles = Directory.GetFiles(path, "*.mtn", SearchOption.AllDirectories);
+		config.motionFiles = Directory.GetFiles(path, "*.motion3.json", SearchOption.AllDirectories);
 		if(config.motionFiles.Length == 0)
 			config.motionFiles = Directory.GetFiles(path, "*.mtn.bytes", SearchOption.AllDirectories);
 

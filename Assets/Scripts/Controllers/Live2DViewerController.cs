@@ -2,20 +2,61 @@
 using UnityEngine.UI;
 using System.Collections;
 using System;
+using System.IO;
+using Live2D.Cubism.Core;
+using Live2D.Cubism.Framework.Json;
 
 public class Live2DViewerController : MonoBehaviour
 {
 	public Live2DViewerConfig config;
 	public BackgroundComponent backgroundComponent;
-	public Live2DModelComponent modelComponent;
-	public Live2DMotionsComponent motionsComponent;
-	public Live2DExpressionComponent expComponent;
-	public CameraResetAction cameraResetAction;
+	public CubismModel3Json model3json;
+	public CubismModel3Json modeljson;
+	public CubismModel model3;
+	public CubismModel model;
 
 	public Text indicatorTitle;
 	public Text indicatorBody;
 
 	public GameObject settingsPrefab;
+
+	public bool newModel(string name) {
+		if (model != null && model.name == name) {
+			model.gameObject.SetActive(true);
+			var m = model;
+			model = model3;
+			model3 = m;
+			if (model != null) {
+				model.gameObject.SetActive(false);
+			}
+			var mj = modeljson;
+			modeljson = model3json;
+			model3json = mj;
+			return false;
+		} else if (model != null) {
+			Destroy(model.gameObject);
+			//Destroy(model);
+			model = null;
+			foreach (var texture in modeljson.Textures) {
+				Destroy(texture);
+			}
+			modeljson = null;
+		}
+		return true;
+	}
+
+	public void loadModel(CubismModel newModel, CubismModel3Json newModel3Json = null) {
+		if (newModel != null) {
+			//newModel.gameObject.SetActive(false);
+			model = model3;
+			model3 = newModel;
+			if (model != null) {
+				model.gameObject.SetActive(false);
+			}
+			modeljson = model3json;
+			model3json = newModel3Json;
+		}
+	}
 
 	public void OnConfigChanged(Live2DViewerConfig c, Live2DViewerConfigChangeType t) {
 		config = c;
@@ -24,6 +65,23 @@ public class Live2DViewerController : MonoBehaviour
 			case Live2DViewerConfigChangeType.Model:
 				if (config.models.Length > 0) {
 					var current = config.currentModel;
+					if (current.mocFile.EndsWith(".model3.json")) {
+						var m3j = CubismModel3Json.LoadAtPath(current.mocFile);
+						if (m3j != null && newModel(Path.GetFileNameWithoutExtension(m3j.FileReferences.Moc))) {
+							loadModel(m3j.ToModel(), m3j);
+						}
+					} else {
+						var moc = CubismMoc.CreateFrom(File.ReadAllBytes(current.mocFile));
+						if (moc != null && newModel(Path.GetFileNameWithoutExtension(current.mocFile))) {
+							var newModel = CubismModel.InstantiateFrom(moc);
+							newModel.name = name;
+							loadModel(newModel);
+						}
+					}
+					//_motionController = model3.GetComponent<CubismMotionController>();
+				}
+				UpdateIndicator();
+				break;/*
 					modelComponent.LoadFromFiles(current.mocFile, current.textureFiles, current.poseFile);
 					if (current.parts == null || current.parts.Length == 0) {
 						current.parts = modelComponent.LoadParts();
@@ -51,7 +109,7 @@ public class Live2DViewerController : MonoBehaviour
 				break;
 			case Live2DViewerConfigChangeType.Parts:
 				modelComponent.SetParts(config.currentModel.parts);
-				break;
+				break;*/
 			case Live2DViewerConfigChangeType.Background:
 				backgroundComponent.LoadFromFile(config.backgroundTexturePath);
 				break;
@@ -94,7 +152,7 @@ public class Live2DViewerController : MonoBehaviour
 			NextModel();
 		}
 		if (Input.GetKeyUp(KeyCode.Space)) {
-			motionsComponent.NextMotion();
+			//motionsComponent.NextMotion();
 		}
 	}
 }
